@@ -60,7 +60,6 @@ class RecomposeCopyPasteProcessor : CopyPastePostProcessor<TextBlockTransferable
     override fun extractTransferableData(
         content: Transferable
     ): List<TextBlockTransferableData> {
-
         return if (content.isDataFlavorSupported(DataFlavor.stringFlavor)) {
             val text = content.getTransferData(DataFlavor.stringFlavor) as String
             val xmlPreamble = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -72,9 +71,11 @@ class RecomposeCopyPasteProcessor : CopyPastePostProcessor<TextBlockTransferable
                         content.getTransferData(CopiedXMLCode.DATA_FLAVOR) as TextBlockTransferableData
                     )
                 }
+
                 text.contains(xmlPreamble, true) -> {
                     listOf(CopiedXMLCode(text, intArrayOf(0), intArrayOf(0)) as TextBlockTransferableData)
                 }
+
                 else -> {
                     emptyList()
                 }
@@ -86,14 +87,13 @@ class RecomposeCopyPasteProcessor : CopyPastePostProcessor<TextBlockTransferable
 
     // Perform paste: Process transferable data
     override fun processTransferableData(
-        project: Project,
-        editor: Editor,
-        bounds: RangeMarker,
+        project: Project?,
+        editor: Editor?,
+        bounds: RangeMarker?,
         caretOffset: Int,
-        indented: Ref<Boolean>,
-        values: List<TextBlockTransferableData>
+        indented: Ref<in Boolean>?,
+        values: MutableList<out TextBlockTransferableData>?
     ) {
-
         // We check whether we are pasting into a Kotlin file here. If not then there's no reason to
         // paste the Composable code.
         if ((editor as EditorImpl).virtualFile.fileType != KotlinFileType.INSTANCE) {
@@ -105,9 +105,8 @@ class RecomposeCopyPasteProcessor : CopyPastePostProcessor<TextBlockTransferable
             return
         }
 
-        if (confirmConvertXmlOnPaste(project)) {
-
-            val value = values.single() as CopiedXMLCode
+        if (confirmConvertXmlOnPaste(project!!)) {
+            val value = values!!.single() as CopiedXMLCode
 
             val parser = ParserImpl()
             // Currently we parse all text of the document we copied from. Obviously this is wrong and we should only
@@ -121,7 +120,7 @@ class RecomposeCopyPasteProcessor : CopyPastePostProcessor<TextBlockTransferable
             // We also should update the list of imports here to include the necessary classes.
             runWriteAction {
                 editor.document.replaceString(
-                    bounds.startOffset,
+                    bounds!!.startOffset,
                     bounds.endOffset,
                     code
                 )
